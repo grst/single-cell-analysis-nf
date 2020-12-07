@@ -17,7 +17,7 @@ def nxfVars(task) {
         }]
     }
 
-    // convert to json
+    // // convert to json
     def builder = new JsonBuilder()
     builder(nxf_vars)
 
