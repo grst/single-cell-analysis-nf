@@ -84,3 +84,5 @@ print(f"    After: {adata.shape[0]}")
 
 # %%
 adata.write_h5ad(output_adata)
+
+# %%

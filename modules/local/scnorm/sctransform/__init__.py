@@ -1,3 +1,10 @@
+"""sctransform wrapper function
+
+Taken from https://github.com/theislab/scanpy/pull/1271 by @gokceneraslan. 
+This is a temporary solution until this gets integrated into scanpy. 
+
+"""
+
 import collections
 import numpy as np
 import scipy.sparse as sp
@@ -5,8 +12,8 @@ import scipy.sparse as sp
 from typing import Optional, Sequence
 from anndata import AnnData
 
-from ...preprocessing import filter_genes
-from ..rtools import (
+from scanpy.preprocessing import filter_genes
+from .rtools import (
     anndata2ri_check,
     py2r,
     r2py,
