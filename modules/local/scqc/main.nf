@@ -12,6 +12,8 @@ process SCQC {
         mode: params.publish_dir_mode,
         saveAs: { filename -> saveFiles(filename:filename, options:params.options, publish_dir:getSoftwareName(task.process), publish_id:meta.id) }
 
+    conda "/home/sturm/.conda/envs/single-cell-analysis-nf"
+
     input:
     tuple val(meta), path(input_adata)
 
@@ -28,7 +30,7 @@ process SCQC {
     """
     ${nxfVars(task)}
     export PYTHONPATH="${moduleDir}"
-    jupytext --execute -o scqc-notebook.ipynb ${moduleDir}/scqc-notebook.py
+    jupytext --execute -o \$(pwd)/scqc-notebook.ipynb ${moduleDir}/scqc-notebook.py
     jupyter nbconvert scqc-notebook.ipynb --to html
     """    
 }

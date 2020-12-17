@@ -10,7 +10,7 @@ from qc_plots import plot_qc_metrics
 # %%
 input_adata = nxf.input(
     "input_adata",
-    "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Laughney_Massague_2020_NSCLC/h5ad/laughney_massague_2020_nsclc.h5ad",
+    "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Lambrechts_2018_LUAD/E-MTAB-6149-v2/h5ad_raw/lambrechts_2018_luad_6149-v2.h5ad",
 )
 output_adata = nxf.input("output_adata", "/tmp/adata.h5ad")
 thresholds = {
@@ -27,6 +27,14 @@ thresholds = {
 adata = sc.read_h5ad(input_adata)
 
 # %%
+# Add fake sample if its not in obs
+if "sample" not in adata.obs.columns:
+    no_sample = True
+    adata.obs["sample"] = "1"
+else:
+    no_sample = False
+
+# %%
 if "mito" not in adata.var.columns:
     adata.var["mito"] = adata.var_names.str.lower().str.startswith("mt-")
 
@@ -39,10 +47,17 @@ sc.pp.calculate_qc_metrics(
 adata.obs.columns
 
 # %%
-sc.pl.violin(adata, "total_counts", groupby="sample", rotation=90, log=True, cut=0)
+figwidth = min(max(adata.obs["sample"].unique().size * 0.5, 2), 20)
 
 # %%
-sc.pl.violin(adata, "pct_counts_mito", groupby="sample", rotation=90)
+fig, ax = plt.subplots(1, 1, figsize=(figwidth, 5))
+sc.pl.violin(
+    adata, "total_counts", groupby="sample", rotation=90, log=True, cut=0, ax=ax
+)
+
+# %%
+fig, ax = plt.subplots(1, 1, figsize=(figwidth, 5))
+sc.pl.violin(adata, "pct_counts_mito", groupby="sample", rotation=90, ax=ax)
 
 # %%
 plot_qc_metrics(adata, **thresholds)
@@ -82,7 +97,21 @@ print(f"    Before: {adata.shape[0]}")
 adata = adata[adata.obs["pct_counts_mito"] < thresholds["max_pct_mito"]].copy()
 print(f"    After: {adata.shape[0]}")
 
-# %%
-adata.write_h5ad(output_adata)
+# %% [markdown]
+# ## After filtering
 
 # %%
+plot_qc_metrics(adata, **thresholds)
+
+# %%
+plot_qc_metrics(adata, cumulative=True, **thresholds)
+
+# %% [markdown]
+# ### Save AnnData object
+
+# %%
+if no_sample:
+    del adata.obs["sample"]
+
+# %%
+adata.write_h5ad(output_adata, compression="lzf")

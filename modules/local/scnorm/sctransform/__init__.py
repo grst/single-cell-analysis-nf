@@ -100,11 +100,11 @@ def sctransform(
         X_subset = adata.X[:10]
     else:
         X_subset = adata.X
-    err = 'Make sure that adata.X contains unnormalized count data'
-    if sp.issparse(X_subset):
-        assert (X_subset.astype(int) != X_subset).nnz == 0, err
-    else:
-        assert np.all(X_subset.astype(int) == X_subset), err
+#     err = 'Make sure that adata.X contains unnormalized count data'
+#     if sp.issparse(X_subset):
+#         assert (X_subset.astype(int) != X_subset).nnz == 0, err
+#     else:
+#         assert np.all(X_subset.astype(int) == X_subset), err
 
     assert regress_out, 'regress_out cannot be emtpy'
 

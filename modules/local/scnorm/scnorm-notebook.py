@@ -7,14 +7,14 @@ import scipy as sp
 
 import rpy2.rinterface_lib.callbacks
 import logging
-
+ 
 from rpy2.robjects import pandas2ri
 import anndata2ri
 import sys
 sys.path.insert(0, "/home/sturm/projects/2020/scanpy/")
 import scanpy as sc
 import scanpy.external as sce
-#from sctransform import sctransform
+from sctransform import sctransform
 
 
 # +
@@ -114,18 +114,42 @@ adata_sct.raw = adata_raw
 # adata_sct.X = adata_sct.X.toarray()
 # -
 
-sce.pp.sctransform(adata_sct)
+sctransform(adata_sct, n_top_genes=4000)
 
-sc.pp.highly_variable_genes(adata_sct, flavor="cell_ranger", n_top_genes=4000)
+# +
+# sc.pp.highly_variable_genes(adata_sct, flavor="cell_ranger", n_top_genes=4000)
+# -
+
+sc.pp.log1p(adata_sct)
 
 sc.pp.pca(adata_sct, n_comps=50, use_highly_variable=True, svd_solver='arpack')
 sc.pp.neighbors(adata_sct)
 sc.tl.umap(adata_sct)
 
-sc.pl.umap(adata_cpm, color=["CD8A", "CD4", "CST3", "NKG7"])
+# ### scran + sctransform
 
-sc.pl.umap(adata_scran, color=["CD8A", "CD4", "CST3", "NKG7"])
+adata_scran_sct = adata.copy()
 
-sc.pl.umap(adata_sct, color=["CD8A", "CD4", "CST3", "NKG7"])
+adata_scran_sct.X = sparse_size_factors @ adata_scran_sct.X
+
+sctransform(adata_scran_sct, n_top_genes=4000)
+
+sc.pp.log1p(adata_scran_sct)
+
+sc.pp.pca(adata_scran_sct, n_comps=50, use_highly_variable=True, svd_solver='arpack')
+sc.pp.neighbors(adata_scran_sct)
+sc.tl.umap(adata_scran_sct)
+
+# ### Visualize
+
+markers = ["CD8A", "CD4", "FOXP3", "sample"]
+
+sc.pl.umap(adata_cpm, color=markers)
+
+sc.pl.umap(adata_scran, color=markers)
+
+sc.pl.umap(adata_sct, color=markers)
+
+sc.pl.umap(adata_scran_sct, color=markers)
 
 
