@@ -7,89 +7,78 @@ import scipy as sp
 
 import rpy2.rinterface_lib.callbacks
 import logging
- 
+
 from rpy2.robjects import pandas2ri
 import anndata2ri
-import sys
-sys.path.insert(0, "/home/sturm/projects/2020/scanpy/")
 import scanpy as sc
-import scanpy.external as sce
-from sctransform import sctransform
+from nxfvars import nxf
+from threadpoolctl import threadpool_limits
+import matplotlib
+from pathlib import Path
+# -
 
+
+cpus = int(nxf.task("cpus", 16))
+cell_cycle_markers = nxf.input("cell_cycle_genes", "Macosko_cell_cycle_genes.txt")
+input_adata = nxf.input("input_adata", "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/20_qc_norm_scrnaseq/01_qc_and_filtering/Adams_Kaminski_2020_COPD/output_adata.h5ad")
+output_adata = nxf.input("output_adata", "/tmp/adata_norm.h5ad")
+
+threadpool_limits(cpus)
 
 # +
 # Ignore R warning messages
-#Note: this can be commented out to get more verbose R output
+# Note: this can be commented out to get more verbose R output
 # rpy2.rinterface_lib.callbacks.logger.setLevel(logging.ERROR)
+
+pandas2ri.activate()
+anndata2ri.activate()
 
 # Automatically convert rpy2 outputs to pandas dataframes
 # %load_ext rpy2.ipython
 
-# + language="R"
+# + magic_args="-i cpus" language="R"
 #
 # # Load all the R libraries we will be using in the notebook
 # library(scran)
+# library(BiocParallel)
+# BPPARAM = MulticoreParam(workers=cpus)
 # -
 
-adata = sc.read_h5ad("/tmp/adata.h5ad")
-
-# +
-# adata = sc.datasets.pbmc3k()
-# -
-
-adata_raw = adata.copy()
-sc.pp.log1p(adata_raw)
-
-sc.pp.filter_cells(adata, min_genes=200)
-sc.pp.filter_genes(adata, min_cells=3)
-
-# ### CPM normalization
-
-adata_cpm = adata.copy()
-adata_cpm.raw = adata_raw
-sc.pp.normalize_per_cell(adata_cpm, counts_per_cell_after=1e6)
-sc.pp.log1p(adata_cpm)
-sc.pp.highly_variable_genes(adata_cpm, flavor="cell_ranger", n_top_genes=4000)
-sc.pp.pca(adata_cpm)
-sc.pp.neighbors(adata_cpm)
-sc.tl.leiden(adata_cpm)
-sc.tl.umap(adata_cpm)
+adata = sc.read_h5ad(input_adata)
 
 # ### Scran normalization
+#
+# Scran requires a clustering before normalization
 
 adata_pp = adata.copy()
 sc.pp.normalize_per_cell(adata_pp, counts_per_cell_after=1e6)
 sc.pp.log1p(adata_pp)
 sc.pp.pca(adata_pp, n_comps=15)
 sc.pp.neighbors(adata_pp)
-sc.tl.leiden(adata_pp, key_added='groups', resolution=0.5)
+sc.tl.leiden(adata_pp, key_added="groups", resolution=0.5)
 
 adata_scran = adata.copy()
 
-#Preprocess variables for scran normalization
-input_groups = adata_pp.obs['groups']
-data_mat = adata_scran.X.T.toarray()
-
-pandas2ri.activate()
-anndata2ri.activate()
+# Preprocess variables for scran normalization
+input_groups = adata_pp.obs["groups"]
+data_mat = adata_scran.X.T.tocsr()
 
 # + magic_args="-i data_mat -i input_groups -o size_factors" language="R"
 #
-# size_factors = computeSumFactors(data_mat, clusters=input_groups, min.mean=0.1)
+# size_factors = computeSumFactors(
+#     data_mat, clusters=input_groups, min.mean=0.1, BPPARAM=BPPARAM
+# )
 # -
-pandas2ri.deactivate()
-anndata2ri.deactivate()
-
 sns.distplot(size_factors)
 
 
-adata_scran.obs['size_factors'] = size_factors
+adata_scran.obs["size_factors"] = size_factors
 
-sc.pl.scatter(adata_scran, 'size_factors', 'n_genes')
+sc.pl.scatter(adata_scran, "size_factors", "n_genes_by_counts")
 
 adata_scran.layers["counts"] = adata_scran.X.copy()
 
-sparse_size_factors = sp.sparse.diags(1/adata_scran.obs['size_factors'])
+sparse_size_factors = sp.sparse.diags(1 / adata_scran.obs["size_factors"])
 
 adata_scran.X = sparse_size_factors @ adata_scran.X
 
@@ -97,59 +86,51 @@ sc.pp.log1p(adata_scran)
 
 adata_scran.raw = adata_scran
 
-sc.pp.highly_variable_genes(adata_scran, flavor="cell_ranger", n_top_genes=4000)
+adata = adata_scran
 
-sc.pp.pca(adata_scran, n_comps=50, use_highly_variable=True, svd_solver='arpack')
-sc.pp.neighbors(adata_scran)
-sc.tl.umap(adata_scran)
+# ### Cell-cycle scoring
 
-sc.tl.leiden(adata_scran)
+# Prepare genes for human and mouse
+cc_genes = pd.read_table(cell_cycle_markers, delimiter="\t")
+s_genes = cc_genes["S"].dropna()
+g2m_genes = cc_genes["G2.M"].dropna()
 
-# ### sctransform normalization
-
-adata_sct = adata.copy()
-adata_sct.raw = adata_raw
-
-# +
-# adata_sct.X = adata_sct.X.toarray()
-# -
-
-sctransform(adata_sct, n_top_genes=4000)
-
-# +
-# sc.pp.highly_variable_genes(adata_sct, flavor="cell_ranger", n_top_genes=4000)
-# -
-
-sc.pp.log1p(adata_sct)
-
-sc.pp.pca(adata_sct, n_comps=50, use_highly_variable=True, svd_solver='arpack')
-sc.pp.neighbors(adata_sct)
-sc.tl.umap(adata_sct)
-
-# ### scran + sctransform
-
-adata_scran_sct = adata.copy()
-
-adata_scran_sct.X = sparse_size_factors @ adata_scran_sct.X
-
-sctransform(adata_scran_sct, n_top_genes=4000)
-
-sc.pp.log1p(adata_scran_sct)
-
-sc.pp.pca(adata_scran_sct, n_comps=50, use_highly_variable=True, svd_solver='arpack')
-sc.pp.neighbors(adata_scran_sct)
-sc.tl.umap(adata_scran_sct)
+sc.tl.score_genes_cell_cycle(adata, s_genes=s_genes, g2m_genes=g2m_genes)
 
 # ### Visualize
 
-markers = ["CD8A", "CD4", "FOXP3", "sample"]
+batch_key = None if "sample" not in adata.obs.columns else "sample"
 
-sc.pl.umap(adata_cpm, color=markers)
+try:
+    sc.pp.highly_variable_genes(
+        adata_scran, flavor="cell_ranger", n_top_genes=5000, batch_key=batch_key
+    )
+except ValueError:
+    # This tends to fail with a batch key... if it does re-do it without a batch key. 
+    sc.pp.highly_variable_genes(
+        adata_scran, flavor="cell_ranger", n_top_genes=5000, batch_key=None
+    )
 
-sc.pl.umap(adata_scran, color=markers)
+sc.pp.pca(adata, n_comps=50, use_highly_variable=True, svd_solver="arpack")
+sc.pp.neighbors(adata)
+sc.tl.umap(adata)
 
-sc.pl.umap(adata_sct, color=markers)
+sc.tl.leiden(adata)
 
-sc.pl.umap(adata_scran_sct, color=markers)
+markers = {
+    "CD8A",
+    "CD4",
+    "FOXP3",
+    "phase",
+    "leiden",
+    "sample",
+    "origin",
+    "tissue",
+    "condition",
+} & (set(adata.var_names) | set(adata.obs.columns))
 
+sc.set_figure_params(figsize=(5,5))
 
+sc.pl.umap(adata, color=markers, ncols=3)
+
+adata.write_h5ad(output_adata, compression="lzf")

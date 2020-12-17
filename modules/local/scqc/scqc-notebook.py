@@ -115,3 +115,5 @@ if no_sample:
 
 # %%
 adata.write_h5ad(output_adata, compression="lzf")
+
+# %%
