@@ -35,7 +35,7 @@ process SOLO_SPLIT_BATCHES {
     sc.pp.highly_variable_genes(adata, flavor="seurat_v3", n_top_genes=4000, subset=True)
 
     # smartseq2 data should be scaled by gene length
-    if length_scaled_layer in adata.layers:
+    if length_scaled_layer != "":
         adata.X = adata.layers[length_scaled_layer]
 
     # write out adata separated by batches
@@ -44,7 +44,7 @@ process SOLO_SPLIT_BATCHES {
     else:
         for batch in adata.obs[batch_key].unique():
             tmp_adata = adata[adata.obs[batch_key] == batch, :].copy()
-            adata.write_h5ad(f"${meta.id}_{batch}.solo.h5ad", compression="lzf")
+            tmp_adata.write_h5ad(f"${meta.id}_{batch}.solo.h5ad", compression="lzf")
     """
 }
 

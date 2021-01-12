@@ -19,6 +19,8 @@ workflow {
 
     SCQC(ch_samples)
 
+    SCQC.out.adata.view()
+
     SOLO_MERGE_BATCHES(
         SOLO (
             SOLO_SPLIT_BATCHES(SCQC.out.adata).adata.transpose()
