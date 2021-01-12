@@ -105,7 +105,7 @@ try:
     sc.pp.highly_variable_genes(
         adata_scran, flavor="cell_ranger", n_top_genes=5000, batch_key=batch_key
     )
-except ValueError:
+except (ValueError, IndexError):
     # This tends to fail with a batch key... if it does re-do it without a batch key. 
     sc.pp.highly_variable_genes(
         adata_scran, flavor="cell_ranger", n_top_genes=5000, batch_key=None

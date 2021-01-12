@@ -10,7 +10,7 @@ from qc_plots import plot_qc_metrics
 # %%
 input_adata = nxf.input(
     "input_adata",
-    "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Lambrechts_2018_LUAD/E-MTAB-6149-v2/h5ad_raw/lambrechts_2018_luad_6149-v2.h5ad",
+    "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Lambrechts_2018_LUAD/E-MTAB-6653/h5ad_raw/lambrechts_2018_luad_6653.h5ad",
 )
 output_adata = nxf.input("output_adata", "/tmp/adata.h5ad")
 thresholds = {

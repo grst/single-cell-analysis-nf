@@ -13,7 +13,10 @@ process SCNORM {
         saveAs: { filename -> saveFiles(filename:filename, options:params.options, publish_dir:getSoftwareName(task.process), publish_id:meta.id) }
 
     conda "/home/sturm/.conda/envs/single-cell-analysis-nf-norm"
-    cpus 22
+    cpus 11
+
+    errorStrategy 'finish'
+    cache 'lenient'
 
     input:
     tuple val(meta), path(input_adata)

@@ -22,7 +22,7 @@ process SCQC {
     path("*.html"), emit: notebook
 
     script:
-    output_adata = "output_adata.h5ad"
+    output_adata = "${meta.id}.qc.h5ad"
     min_genes = meta.min_genes
     min_counts = meta.min_counts
     max_pct_mito = meta.max_pct_mito
