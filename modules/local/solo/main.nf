@@ -27,16 +27,11 @@ process SOLO_SPLIT_BATCHES {
 
     adata = sc.read_h5ad("${input_adata}") 
     batch_key = "${meta.batch_key}"
-    length_scaled_layer = "${meta.length_scaled_layer}"
 
-    # select highly variable genese to speedup solo
+    # select highly variable genes to speedup solo
     # salmon counts are not integers. However this breaks highly variable genes. 
     adata.X.data = adata.X.data.astype("int")
     sc.pp.highly_variable_genes(adata, flavor="seurat_v3", n_top_genes=4000, subset=True)
-
-    # smartseq2 data should be scaled by gene length
-    if length_scaled_layer != "":
-        adata.X = adata.layers[length_scaled_layer]
 
     # write out adata separated by batches
     if batch_key == "":
@@ -55,6 +50,7 @@ process SOLO {
         mode: params.publish_dir_mode,
         saveAs: { filename -> saveFiles(filename:filename, options:params.options, publish_dir:getSoftwareName(task.process), publish_id:meta.id) }
 
+    errorStrategy 'ignore'
     cpus 4
     conda "/home/sturm/.conda/envs/single-cell-analysis-nf-solo"
     clusterOptions '-V -S /bin/bash -q all.q@apollo-15'
