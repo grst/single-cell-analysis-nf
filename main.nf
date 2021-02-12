@@ -19,11 +19,13 @@ workflow {
 
     SCQC(ch_samples)
 
-    SOLO_MERGE_BATCHES(
-        SOLO (
-            SOLO_SPLIT_BATCHES(SCQC.out.adata).adata.transpose()
-        ).is_doublet.groupTuple()
-    )
+    if(!params.skip_solo) {
+        SOLO_MERGE_BATCHES(
+            SOLO (
+                SOLO_SPLIT_BATCHES(SCQC.out.adata).adata.transpose()
+            ).is_doublet.groupTuple()
+        )
+    }
 
     // SCNORM(SCQC.out.adata)
 }
