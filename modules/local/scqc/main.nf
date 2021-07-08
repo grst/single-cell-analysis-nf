@@ -19,14 +19,17 @@ process SCQC {
 
     output:
     tuple val(meta), path(output_adata), emit: adata
+    path(output_stats), emit: qc_stats
     path("*.html"), emit: notebook
 
     script:
     output_adata = "${meta.id}.qc.h5ad"
-    min_genes = meta.min_genes
+    output_stats = "${meta.id}.qc_stats.tsv"
+    dataset_id = meta.id
     min_counts = meta.min_counts
-    max_pct_mito = meta.max_pct_mito
     max_counts = meta.max_counts
+    min_genes = meta.min_genes
+    max_pct_mito = meta.max_pct_mito
     """
     ${nxfVars(task)}
     export PYTHONPATH="${moduleDir}"

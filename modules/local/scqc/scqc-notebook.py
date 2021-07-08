@@ -6,13 +6,17 @@ from nxfvars import nxf
 import matplotlib.pyplot as plt
 import seaborn as sns
 from qc_plots import plot_qc_metrics
+import pandas as pd
+import numpy as np
 
 # %%
+dataset_id = nxf.input("dataset_id", "lambrechts_2018_luad_6653")
 input_adata = nxf.input(
     "input_adata",
     "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Lambrechts_2018_LUAD/E-MTAB-6653/h5ad_raw/lambrechts_2018_luad_6653.h5ad",
 )
 output_adata = nxf.input("output_adata", "/tmp/adata.h5ad")
+output_stats = nxf.input("output_stats", "/tmp/qc_stats.tsv")
 thresholds = {
     key: int(nxf.input(key, default_value))
     for key, default_value in {
@@ -42,6 +46,24 @@ if "mito" not in adata.var.columns:
 sc.pp.calculate_qc_metrics(
     adata, qc_vars=("mito",), log1p=False, inplace=True, percent_top=None
 )
+
+# %%
+def get_stats_df(adata):
+    return pd.DataFrame().assign(
+        dataset_id=[dataset_id],
+        min_genes=[np.min(adata.obs["n_genes_by_counts"])],
+        max_genes=[np.max(adata.obs["n_genes_by_counts"])],
+        min_counts=[np.min(adata.obs["total_counts"])],
+        max_counts=[np.max(adata.obs["total_counts"])],
+        min_pct_mito=[np.min(adata.obs["pct_counts_mito"])],
+        max_pct_mito=[np.max(adata.obs["pct_counts_mito"])],
+        n_obs=len(adata.obs_names),
+        n_var=len(adata.var_names),
+    )
+
+
+stats_before = get_stats_df(adata).assign(status=["before_qc"])
+
 
 # %%
 adata.obs.columns
@@ -114,6 +136,8 @@ if no_sample:
     del adata.obs["sample"]
 
 # %%
-adata.write_h5ad(output_adata, compression="lzf")
+stats_after = get_stats_df(adata).assign(status=["after_qc"])
+pd.concat([stats_before, stats_after]).to_csv(output_stats, sep="\t")
+adata.write_h5ad(output_adata)
 
 # %%
