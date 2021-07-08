@@ -1,4 +1,4 @@
-include { nxfVars } from "../nxfvars.nf"
+include { nxfvars } from "../nxfvars.nf"
 include { initOptions; saveFiles; getSoftwareName } from './functions'
 
 params.options = [:]
@@ -31,9 +31,9 @@ process SCQC {
     min_genes = meta.min_genes
     max_pct_mito = meta.max_pct_mito
     """
-    ${nxfVars(task)}
+    ${nxfvars(task)}
+
     export PYTHONPATH="${moduleDir}"
-    jupytext --execute -o \$(pwd)/scqc-notebook.ipynb ${moduleDir}/scqc-notebook.py
-    jupyter nbconvert scqc-notebook.ipynb --to html
+    nxfvars execute ${moduleDir}/scqc-notebook.py report.html
     """    
 }

@@ -2,23 +2,22 @@
 # %load_ext autoreload
 # %autoreload 2
 import scanpy as sc
-from nxfvars import nxf
+from nxfvars import nxfvars
 import matplotlib.pyplot as plt
 import seaborn as sns
-from qc_plots import plot_qc_metrics
+from qc_plots import plot_qc_metrics, get_stats_df
 import pandas as pd
-import numpy as np
 
 # %%
-dataset_id = nxf.input("dataset_id", "lambrechts_2018_luad_6653")
-input_adata = nxf.input(
+dataset_id = nxfvars.get("dataset_id", "lambrechts_2018_luad_6653")
+input_adata = nxfvars.get(
     "input_adata",
     "/home/sturm/projects/2020/pircher-scrnaseq-lung/data/10_public_datasets/Lambrechts_2018_LUAD/E-MTAB-6653/h5ad_raw/lambrechts_2018_luad_6653.h5ad",
 )
-output_adata = nxf.input("output_adata", "/tmp/adata.h5ad")
-output_stats = nxf.input("output_stats", "/tmp/qc_stats.tsv")
+output_adata = nxfvars.get("output_adata", "/tmp/adata.h5ad")
+output_stats = nxfvars.get("output_stats", "/tmp/qc_stats.tsv")
 thresholds = {
-    key: int(nxf.input(key, default_value))
+    key: int(nxfvars.get(key, default_value))
     for key, default_value in {
         "min_genes": 500,
         "min_counts": 1800,
@@ -48,21 +47,7 @@ sc.pp.calculate_qc_metrics(
 )
 
 # %%
-def get_stats_df(adata):
-    return pd.DataFrame().assign(
-        dataset_id=[dataset_id],
-        min_genes=[np.min(adata.obs["n_genes_by_counts"])],
-        max_genes=[np.max(adata.obs["n_genes_by_counts"])],
-        min_counts=[np.min(adata.obs["total_counts"])],
-        max_counts=[np.max(adata.obs["total_counts"])],
-        min_pct_mito=[np.min(adata.obs["pct_counts_mito"])],
-        max_pct_mito=[np.max(adata.obs["pct_counts_mito"])],
-        n_obs=len(adata.obs_names),
-        n_var=len(adata.var_names),
-    )
-
-
-stats_before = get_stats_df(adata).assign(status=["before_qc"])
+stats_before = get_stats_df(adata, dataset_id).assign(status=["before_qc"])
 
 
 # %%
@@ -136,8 +121,8 @@ if no_sample:
     del adata.obs["sample"]
 
 # %%
-stats_after = get_stats_df(adata).assign(status=["after_qc"])
-pd.concat([stats_before, stats_after]).to_csv(output_stats, sep="\t")
+stats_after = get_stats_df(adata, dataset_id).assign(status=["after_qc"])
+pd.concat([stats_before, stats_after]).to_csv(output_stats, sep="\t", index=False)
 adata.write_h5ad(output_adata)
 
 # %%

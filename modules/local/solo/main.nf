@@ -1,4 +1,3 @@
-include { nxfVars } from "../nxfvars.nf"
 include { initOptions; saveFiles; getSoftwareName } from './functions'
 
 params.options = [:]

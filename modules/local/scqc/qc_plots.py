@@ -2,6 +2,24 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import pandas as pd
+
+
+def get_stats_df(adata, dataset_id):
+    """
+    Generate a dataframe with QC stats
+    """
+    return pd.DataFrame().assign(
+        dataset_id=[dataset_id],
+        min_genes=[np.min(adata.obs["n_genes_by_counts"])],
+        max_genes=[np.max(adata.obs["n_genes_by_counts"])],
+        min_counts=[np.min(adata.obs["total_counts"])],
+        max_counts=[np.max(adata.obs["total_counts"])],
+        min_pct_mito=[np.min(adata.obs["pct_counts_mito"])],
+        max_pct_mito=[np.max(adata.obs["pct_counts_mito"])],
+        n_obs=len(adata.obs_names),
+        n_var=len(adata.var_names),
+    )
 
 
 def plot_qc_metrics(
