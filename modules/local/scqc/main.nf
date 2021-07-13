@@ -29,11 +29,12 @@ process SCQC {
     min_counts = meta.min_counts
     max_counts = meta.max_counts
     min_genes = meta.min_genes
+    max_genes = meta.max_genes
     max_pct_mito = meta.max_pct_mito
     """
     ${nxfvars(task)}
 
     export PYTHONPATH="${moduleDir}"
-    nxfvars execute ${moduleDir}/scqc-notebook.py report.html
+    nxfvars execute ${moduleDir}/scqc-notebook.py ${dataset_id}_qc_report.html
     """    
 }

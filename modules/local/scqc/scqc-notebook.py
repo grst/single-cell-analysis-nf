@@ -20,9 +20,10 @@ thresholds = {
     key: int(nxfvars.get(key, default_value))
     for key, default_value in {
         "min_genes": 500,
+        "max_genes": float("inf"),
         "min_counts": 1800,
-        "max_pct_mito": 20,
         "max_counts": 50000,
+        "max_pct_mito": 20,
     }.items()
 }
 
@@ -96,6 +97,12 @@ print(f"    After: {adata.shape[0]}")
 print("Filter by min_genes")
 print(f"    Before: {adata.shape[0]}")
 sc.pp.filter_cells(adata, min_genes=thresholds["min_genes"])
+print(f"    After: {adata.shape[0]}")
+
+
+print("Filter by max_genes")
+print(f"    Before: {adata.shape[0]}")
+sc.pp.filter_cells(adata, max_genes=thresholds["max_genes"])
 print(f"    After: {adata.shape[0]}")
 
 

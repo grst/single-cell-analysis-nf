@@ -26,6 +26,7 @@ def plot_qc_metrics(
     adata,
     cumulative=False,
     min_genes=None,
+    max_genes=None,
     min_counts=None,
     max_pct_mito=None,
     max_counts=None,
@@ -41,10 +42,11 @@ def plot_qc_metrics(
     KEYS = (
         "total_counts",
         "total_counts (< 5000)",
+        "n_genes_by_counts (< 1000)",
         "n_genes_by_counts",
         "pct_counts_mito",
     )
-    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(17, 10))
     axs = {k: ax for k, ax in zip(KEYS, axs.flatten())}
 
     def _add_line(ax, val):
@@ -61,6 +63,10 @@ def plot_qc_metrics(
     for key, ax in axs.items():
         if key == "total_counts (< 5000)":
             values = adata.obs["total_counts"][adata.obs["total_counts"] < 5000]
+        elif key == "n_genes_by_counts (< 1000)":
+            values = adata.obs["n_genes_by_counts"][
+                adata.obs["n_genes_by_counts"] < 1000
+            ]
         else:
             values = adata.obs[key]
 
@@ -80,6 +86,8 @@ def plot_qc_metrics(
     _add_line(axs["total_counts (< 5000)"], min_counts)
     _add_line(axs["total_counts"], max_counts)
     _add_line(axs["n_genes_by_counts"], min_genes)
+    _add_line(axs["n_genes_by_counts (< 1000)"], min_genes)
+    _add_line(axs["n_genes_by_counts"], max_genes)
     _add_line(axs["pct_counts_mito"], max_pct_mito)
 
     if show:

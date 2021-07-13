@@ -48,7 +48,9 @@ workflow {
     if(!params.skip_solo) {
         SOLO_MERGE_BATCHES(
             SOLO (
-                SOLO_SPLIT_BATCHES(SCQC.out.adata.filter{ it["run_solo"] == "true" }).adata.transpose()
+                SOLO_SPLIT_BATCHES(SCQC.out.adata.filter{ 
+                    meta, adata -> meta["run_solo"] == "true" 
+                }).adata.transpose()
             ).is_doublet.groupTuple()
         )
     }
